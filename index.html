@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Asistencia - Control por DNI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #fe8100;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #fe8100;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: white;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-connecting {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* Modal de Login */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .admin-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #fe8100;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab.active {
+            background:#fe8100;
+            color: white;
+        }
+
+        .tab.locked {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+
+        .tab.locked:hover {
+            background: #dee2e6;
+            transform: none;
+        }
+
+        .tab-lock {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 12px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+
+        .tardanza-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #856404;
+        }
+
+        .tardanza-critica {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .employee-info {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .employee-found {
+            background: #d4edda;
+            border-color: #28a745 !important;
+        }
+
+        .employee-not-found {
+            background: #f8d7da;
+            border-color: #dc3545 !important;
+        }
+
+        .location-status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 500;
+        }
+
+        .location-allowed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .location-denied {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .location-checking {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .horario-info {
+            background: #e7f3ff;
+            border: 1px solid #b8daff;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 15px 0;
+            color: #0c5460;
+            font-size: 14px;
+        }
+
+        .btn {
+            background: #fe8100;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+            min-width: 150px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+            min-width: auto;
+        }
+
+        .attendance-record {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .record-info {
+            text-align: left;
+        }
+
+        .record-time {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .record-type {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .record-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-in {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-out {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-late {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .records-section {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .records-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .current-time {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+
+        .employee-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .employee-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .employee-item:last-child {
+            border-bottom: none;
+        }
+
+        .employee-item:hover {
+            background: #f8f9fa;
+        }
+
+        .employee-details {
+            text-align: left;
+            flex: 1;
+        }
+
+        .employee-dni {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .employee-name {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .employee-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .form-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr auto;
+            gap: 10px;
+            align-items: end;
+            margin-bottom: 15px;
+        }
+
+        .upload-section {
+            border: 2px dashed #667eea;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: #fe8100;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .validation-message {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .validation-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .validation-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #fe8100;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .employee-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+
+            .modal-content {
+                margin: 25% auto;
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Indicador de conexión -->
+    <div id="connectionStatus" class="connection-status status-connecting">
+        <span class="loading-spinner"></span> Conectando...
+    </div>
+
+    <div id="adminModal" class="modal">
+        <div class="modal-content">
+            <h3>🔐 Acceso de Administrador</h3>
+            <div class="input-group">
+                <label for="adminUser">Usuario:</label>
+                <input type="text" id="adminUser" placeholder="user">
+            </div>
+            <div class="input-group">
+                <label for="adminPass">Contraseña:</label>
+                <input type="password" id="adminPass" placeholder="password">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-success btn-small" onclick="loginAdmin()">🔓 Ingresar</button>
+                <button class="btn btn-small" onclick="cerrarModal()">❌ Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Indicador de Admin -->
+        <div id="adminIndicator" class="admin-indicator" style="display: none;">
+            👨‍💼 Modo Administrador
+            <button onclick="logoutAdmin()" style="background: none; border: none; color: white; margin-left: 10px; cursor: pointer;">🚪</button>
+        </div>
+
+        <div class="logo">WIN</div>
+        <h1>Sistema de Asistencia</h1>
+        <p class="subtitle">Control por DNI - Sincronizado en Tiempo Real</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('asistencia')">📋 Asistencia</button>
+            <button class="tab locked" id="empleadosTab" onclick="switchTab('empleados')">
+                👥 Empleados <span class="tab-lock">🔒</span>
+            </button>
+            <button class="tab locked" id="reportesTab" onclick="switchTab('reportes')">
+                📊 Reportes <span class="tab-lock">🔒</span>
+            </button>
+        </div>
+
+        <!-- TAB ASISTENCIA -->
+        <div id="asistencia" class="tab-content active">
+            <div class="current-time" id="currentTime"></div>
+            
+            <div class="horario-info">
+                ⏰ <strong>Horario laboral:</strong> 9:00 AM - 6:00 PM
+            </div>
+            
+            <div class="employee-info">
+                <div class="input-group">
+                    <label for="employeeDNI">DNI:</label>
+                    <input type="text" id="employeeDNI" placeholder="Ingresa tu DNI" maxlength="8" onInput="buscarEmpleado()">
+                </div>
+                <div class="input-group">
+                    <label for="employeeName">Nombre:</label>
+                    <input type="text" id="employeeName" placeholder="Se autocompletará" readonly>
+                </div>
+            </div>
+
+            <div id="validationMessage" style="display: none;"></div>
+
+            <div class="location-status" id="locationStatus">
+                <span id="locationText">Verificando ubicación...</span>
+            </div>
+
+            <div class="status-card">
+                <p><strong>Estado actual:</strong> <span id="currentStatus">Fuera del trabajo</span></p>
+                <p><strong>Última acción:</strong> <span id="lastAction">Ninguna</span></p>
+                <p><strong>Registros hoy:</strong> <span id="totalRegistros">0</span></p>
+                <div id="tardanzaInfo" style="margin-top: 10px;"></div>
+            </div>
+
+            <div class="btn-container">
+                <button class="btn" id="checkInBtn" onclick="recordAttendance('in')" disabled>
+                    📍 Marcar Entrada
+                </button>
+                <button class="btn btn-danger" id="checkOutBtn" onclick="recordAttendance('out')" disabled>
+                    🚪 Marcar Salida
+                </button>
+            </div>
+
+            <div class="records-section">
+                <h3 class="records-title">Registros de hoy</h3>
+                <div id="attendanceRecords"></div>
+            </div>
+        </div>
+
+        <!-- TAB EMPLEADOS -->
+        <div id="empleados" class="tab-content">
+            <div class="form-section">
+                <h3>Agregar Nuevo Empleado</h3>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="newDNI">DNI:</label>
+                        <input type="text" id="newDNI" placeholder="12345678" maxlength="8">
+                    </div>
+                    <div class="input-group">
+                        <label for="newName">Nombre Completo:</label>
+                        <input type="text" id="newName" placeholder="Juan Perez">
+                    </div>
+                    <button class="btn btn-success btn-small" onclick="agregarEmpleado()">➕ Agregar</button>
+                </div>
+            </div>
+
+            <div class="upload-section">
+                <h4>📄 Importar Empleados desde Excel</h4>
+                <p style="font-size: 14px; margin: 10px 0;">Formato: Columna A = DNI, Columna B = Nombre</p>
+                <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls" onchange="importarExcel()">
+                <button class="btn btn-info btn-small" onclick="document.getElementById('fileInput').click()">
+                    📁 Seleccionar Excel
+                </button>
+                <button class="btn btn-warning btn-small" onclick="descargarPlantilla()">
+                    📋 Descargar Plantilla
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalEmpleados">0</div>
+                    <div class="stat-label">Total Empleados</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="empleadosActivos">0</div>
+                    <div class="stat-label">Activos Hoy</div>
+                </div>
+            </div>
+
+            <div class="employee-list" id="employeeList"></div>
+
+            <div style="text-align: center; margin: 20px 0;">
+                <button class="btn btn-success" onclick="exportarEmpleados()">📊 Exportar Lista</button>
+                <button class="btn btn-danger" onclick="limpiarEmpleados()">🗑️ Limpiar Todo</button>
+            </div>
+        </div>
+
+        <!-- TAB REPORTES -->
+        <div id="reportes" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="reporteTotalRegistros">0</div>
+                    <div class="stat-label">Total Registros</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="reporteRegistrosHoy">0</div>
+                    <div class="stat-label">Registros Hoy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="reporteEmpleadosHoy">0</div>
+                    <div class="stat-label">Empleados Hoy</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="reporteTardanzas">0</div>
+                    <div class="stat-label">Tardanzas Hoy</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <button class="btn btn-success" onclick="exportToExcel()">📊 Excel Completo</button>
+                <button class="btn btn-info" onclick="exportTodayOnly()">📋 Solo Hoy</button>
+                <button class="btn btn-warning" onclick="exportEmpleadosAsistencia()">👥 Por Empleado</button>
+            </div>
+
+            <div class="form-section">
+                <h4>📅 Reportes por Fecha</h4>
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="fechaInicio">Fecha Inicio:</label>
+                        <input type="date" id="fechaInicio">
+                    </div>
+                    <div class="input-group">
+                        <label for="fechaFin">Fecha Fin:</label>
+                        <input type="date" id="fechaFin">
+                    </div>
+                    <button class="btn btn-info btn-small" onclick="exportRangoFechas()">📊 Exportar</button>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <button class="btn" onclick="limpiarTodosLosDatos()" style="background: linear-gradient(45deg, #95a5a6, #7f8c8d);">
+                    🗑️ Limpiar Toda la Base de Datos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            getDocs, 
+            deleteDoc,
+            doc,
+            query, 
+            where, 
+            orderBy, 
+            onSnapshot,
+            Timestamp
+        } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+        // 🔥 CONFIGURA AQUÍ TUS CREDENCIALES DE FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDozIEwyy8cO019l4grpVmrIjggqSgvoj4",
+            authDomain: "controlasistencia-d26e6.firebaseapp.com",
+            projectId: "controlasistencia-d26e6",
+            storageBucket: "controlasistencia-d26e6.firebasestorage.app",
+            messagingSenderId: "1050980331597",
+            appId: "1:1050980331597:web:5f27d5759db6d48c2bac04",
+            measurementId: "G-8WEMTC6HJ3"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Configuración de la empresa
+        const COMPANY_LOCATION = {
+            latitude: -12.1000000,
+            longitude: -77.020000,
+            radius: 1000
+        };
+
+        // Configuración de horarios
+        const WORK_SCHEDULE = {
+            startTime: '09:00',
+            endTime: '18:00',
+            onTimeLimit: '09:00'
+        };
+
+        // Credenciales de administrador
+        const ADMIN_CREDENTIALS = {
+            username: 'admin',
+            password: 'admin'
+        };
+
+        let currentLocation = null;
+        let isWithinCompanyArea = false;
+        let currentStatus = 'out';
+        let empleadoActual = null;
+        let isAdmin = false;
+        let unsubscribeListeners = [];
+
+        // Actualizar estado de conexión
+        function updateConnectionStatus(status, message) {
+            const statusDiv = document.getElementById('connectionStatus');
+            statusDiv.className = `connection-status status-${status}`;
+            statusDiv.innerHTML = status === 'connecting' ? 
+                `<span class="loading-spinner"></span> ${message}` : 
+                `${status === 'connected' ? '🟢' : '🔴'} ${message}`;
+        }
+
+        // Clase para manejar Firebase
+        class EmpleadosDB {
+            constructor() {
+                this.empleadosRef = collection(db, 'empleados');
+                this.registrosRef = collection(db, 'registros');
+                this.initDB();
+            }
+
+            async initDB() {
+                try {
+                    updateConnectionStatus('connecting', 'Inicializando base de datos...');
+                    
+                    // Verificar si hay empleados
+                    const empleadosSnapshot = await getDocs(this.empleadosRef);
+                    
+                    if (empleadosSnapshot.empty) {
+                        const empleadosIniciales = [
+                            { dni: '12345678', nombre: 'Juan Pérez García', activo: true, fechaCreacion: Timestamp.now() },
+                            { dni: '87654321', nombre: 'María García López', activo: true, fechaCreacion: Timestamp.now() },
+                            { dni: '11223344', nombre: 'Carlos Rodríguez Silva', activo: true, fechaCreacion: Timestamp.now() },
+                            { dni: '44332211', nombre: 'Ana Martínez Torres', activo: true, fechaCreacion: Timestamp.now() }
+                        ];
+                        
+                        for (const empleado of empleadosIniciales) {
+                            await addDoc(this.empleadosRef, empleado);
+                        }
+                        console.log('✅ Empleados iniciales creados');
+                    }
+                    
+                    this.setupRealtimeListeners();
+                    updateConnectionStatus('connected', 'Conectado a Firebase');
+                    
+                } catch (error) {
+                    console.error('Error al inicializar Firebase:', error);
+                    updateConnectionStatus('disconnected', 'Error de conexión');
+                }
+            }
+
+            setupRealtimeListeners() {
+                // Listener para empleados en tiempo real
+                const empleadosQuery = query(this.empleadosRef, where('activo', '==', true));
+                const unsubEmpleados = onSnapshot(empleadosQuery, (snapshot) => {
+                    console.log('📊 Empleados actualizados automáticamente');
+                    if (isAdmin && document.getElementById('empleados').classList.contains('active')) {
+                        this.mostrarListaEmpleados();
+                        this.actualizarEstadisticasEmpleados();
+                    }
+                });
+
+                // Listener para registros de hoy
+                const hoy = new Date().toISOString().split('T')[0];
+                const registrosQuery = query(
+                    this.registrosRef, 
+                    where('fecha', '==', hoy),
+                    orderBy('timestamp', 'desc')
+                );
+                
+                const unsubRegistros = onSnapshot(registrosQuery, (snapshot) => {
+                    console.log('📋 Registros actualizados automáticamente');
+                    this.mostrarRegistros();
+                    this.actualizarEstadisticas();
+                    if (isAdmin && document.getElementById('reportes').classList.contains('active')) {
+                        this.actualizarEstadisticasReportes();
+                    }
+                });
+
+                unsubscribeListeners.push(unsubEmpleados, unsubRegistros);
+            }
+
+            async buscarEmpleado(dni) {
+                try {
+                    const q = query(this.empleadosRef, where('dni', '==', dni), where('activo', '==', true));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        const docData = querySnapshot.docs[0];
+                        return { id: docData.id, ...docData.data() };
+                    }
+                    return null;
+                } catch (error) {
+                    console.error('Error al buscar empleado:', error);
+                    updateConnectionStatus('disconnected', 'Error de conexión');
+                    throw error;
+                }
+            }
+
+            async agregarEmpleado(dni, nombre) {
+                try {
+                    const empleadoExistente = await this.buscarEmpleado(dni);
+                    if (empleadoExistente) {
+                        throw new Error('Ya existe un empleado con este DNI');
+                    }
+
+                    const nuevoEmpleado = {
+                        dni: dni,
+                        nombre: nombre,
+                        activo: true,
+                        fechaCreacion: Timestamp.now()
+                    };
+
+                    const docRef = await addDoc(this.empleadosRef, nuevoEmpleado);
+                    return { id: docRef.id, ...nuevoEmpleado };
+                } catch (error) {
+                    console.error('Error al agregar empleado:', error);
+                    throw error;
+                }
+            }
+
+            async obtenerEmpleados() {
+                try {
+                    const q = query(this.empleadosRef, where('activo', '==', true));
+                    const querySnapshot = await getDocs(q);
+                    
+                    return querySnapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                } catch (error) {
+                    console.error('Error al obtener empleados:', error);
+                    return [];
+                }
+            }
+
+            async eliminarEmpleado(dni) {
+                try {
+                    const q = query(this.empleadosRef, where('dni', '==', dni));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        await deleteDoc(querySnapshot.docs[0].ref);
+                        return true;
+                    }
+                    return false;
+                } catch (error) {
+                    console.error('Error al eliminar empleado:', error);
+                    return false;
+                }
+            }
+
+            async yaRegistroEntradaHoy(dni) {
+                const hoy = new Date().toISOString().split('T')[0];
+                try {
+                    const q = query(
+                        this.registrosRef,
+                        where('dni', '==', dni),
+                        where('fecha', '==', hoy),
+                        where('tipo', '==', 'in')
+                    );
+                    const querySnapshot = await getDocs(q);
+                    return !querySnapshot.empty;
+                } catch (error) {
+                    console.error('Error al verificar entrada:', error);
+                    return false;
+                }
+            }
+
+            async yaRegistroSalidaHoy(dni) {
+                const hoy = new Date().toISOString().split('T')[0];
+                try {
+                    const q = query(
+                        this.registrosRef,
+                        where('dni', '==', dni),
+                        where('fecha', '==', hoy),
+                        where('tipo', '==', 'out')
+                    );
+                    const querySnapshot = await getDocs(q);
+                    return !querySnapshot.empty;
+                } catch (error) {
+                    console.error('Error al verificar salida:', error);
+                    return false;
+                }
+            }
+
+            async insertarRegistro(dni, nombre, tipo, location) {
+                try {
+                    const now = new Date();
+                    
+                    let tardanza = null;
+                    if (tipo === 'in') {
+                        const horaEntrada = now.toTimeString().substring(0, 5);
+                        tardanza = this.calcularTardanza(horaEntrada);
+                    }
+                    
+                    const nuevoRegistro = {
+                        dni: dni,
+                        nombre: nombre,
+                        tipo: tipo,
+                        fecha: now.toISOString().split('T')[0],
+                        hora: now.toTimeString().split(' ')[0],
+                        timestamp: Timestamp.now(),
+                        latitud: location.latitude,
+                        longitud: location.longitude,
+                        distancia: this.calculateDistance(location.latitude, location.longitude),
+                        tardanza: tardanza,
+                        navegador: navigator.userAgent.substring(0, 100)
+                    };
+
+                    const docRef = await addDoc(this.registrosRef, nuevoRegistro);
+                    return { id: docRef.id, ...nuevoRegistro };
+                } catch (error) {
+                    console.error('Error al insertar registro:', error);
+                    throw error;
+                }
+            }
+
+            async obtenerRegistrosHoy(dni = null) {
+                const hoy = new Date().toISOString().split('T')[0];
+                try {
+                    let q;
+                    if (dni) {
+                        q = query(
+                            this.registrosRef,
+                            where('fecha', '==', hoy),
+                            where('dni', '==', dni),
+                            orderBy('timestamp', 'desc')
+                        );
+                    } else {
+                        q = query(
+                            this.registrosRef,
+                            where('fecha', '==', hoy),
+                            orderBy('timestamp', 'desc')
+                        );
+                    }
+                    
+                    const querySnapshot = await getDocs(q);
+                    return querySnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            ...data,
+                            timestamp: data.timestamp.toDate().toISOString()
+                        };
+                    });
+                } catch (error) {
+                    console.error('Error al obtener registros de hoy:', error);
+                    return [];
+                }
+            }
+
+            async obtenerTodosRegistros() {
+                try {
+                    const q = query(this.registrosRef, orderBy('timestamp', 'desc'));
+                    const querySnapshot = await getDocs(q);
+                    
+                    return querySnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            ...data,
+                            timestamp: data.timestamp.toDate().toISOString()
+                        };
+                    });
+                } catch (error) {
+                    console.error('Error al obtener todos los registros:', error);
+                    return [];
+                }
+            }
+
+            async obtenerUltimoEstado(dni) {
+                const registros = await this.obtenerRegistrosHoy(dni);
+                return registros.length > 0 ? registros[0] : null;
+            }
+
+            async obtenerRegistrosPorFecha(fechaInicio, fechaFin) {
+                try {
+                    const q = query(
+                        this.registrosRef,
+                        where('fecha', '>=', fechaInicio),
+                        where('fecha', '<=', fechaFin),
+                        orderBy('fecha', 'desc'),
+                        orderBy('timestamp', 'desc')
+                    );
+                    const querySnapshot = await getDocs(q);
+                    
+                    return querySnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            id: doc.id,
+                            ...data,
+                            timestamp: data.timestamp.toDate().toISOString()
+                        };
+                    });
+                } catch (error) {
+                    console.error('Error al obtener registros por fecha:', error);
+                    return [];
+                }
+            }
+
+            async obtenerTardanzasHoy() {
+                const registrosHoy = await this.obtenerRegistrosHoy();
+                return registrosHoy.filter(r => r.tipo === 'in' && r.tardanza > 0).length;
+            }
+
+            async obtenerEstadisticas() {
+                try {
+                    const empleados = await this.obtenerEmpleados();
+                    const registros = await this.obtenerTodosRegistros();
+                    const registrosHoy = await this.obtenerRegistrosHoy();
+                    const empleadosActivosHoy = [...new Set(registrosHoy.map(r => r.dni))].length;
+                    const tardanzasHoy = await this.obtenerTardanzasHoy();
+
+                    return {
+                        totalEmpleados: empleados.length,
+                        totalRegistros: registros.length,
+                        registrosHoy: registrosHoy.length,
+                        empleadosActivosHoy: empleadosActivosHoy,
+                        tardanzasHoy: tardanzasHoy,
+                        primerRegistro: registros.length > 0 ? registros[registros.length - 1].fecha : null,
+                        ultimoRegistro: registros.length > 0 ? registros[0].fecha : null
+                    };
+                } catch (error) {
+                    console.error('Error al obtener estadísticas:', error);
+                    return {
+                        totalEmpleados: 0,
+                        totalRegistros: 0,
+                        registrosHoy: 0,
+                        empleadosActivosHoy: 0,
+                        tardanzasHoy: 0,
+                        primerRegistro: null,
+                        ultimoRegistro: null
+                    };
+                }
+            }
+
+            async limpiarTodo() {
+                try {
+                    // Eliminar todos los empleados
+                    const empleadosSnapshot = await getDocs(this.empleadosRef);
+                    for (const doc of empleadosSnapshot.docs) {
+                        await deleteDoc(doc.ref);
+                    }
+
+                    // Eliminar todos los registros
+                    const registrosSnapshot = await getDocs(this.registrosRef);
+                    for (const doc of registrosSnapshot.docs) {
+                        await deleteDoc(doc.ref);
+                    }
+
+                    // Reinicializar
+                    await this.initDB();
+                } catch (error) {
+                    console.error('Error al limpiar base de datos:', error);
+                    throw error;
+                }
+            }
+
+            async importarEmpleados(listaEmpleados) {
+                let agregados = 0;
+                let errores = [];
+
+                for (const emp of listaEmpleados) {
+                    try {
+                        const existe = await this.buscarEmpleado(emp.dni);
+                        if (!existe) {
+                            await this.agregarEmpleado(emp.dni, emp.nombre);
+                            agregados++;
+                        } else {
+                            errores.push(`DNI ${emp.dni} ya existe`);
+                        }
+                    } catch (error) {
+                        errores.push(`Error con DNI ${emp.dni}: ${error.message}`);
+                    }
+                }
+
+                return { agregados, errores };
+            }
+
+            // Métodos de cálculo (sin cambios)
+            calcularTardanza(horaEntrada) {
+                const [horaLimite, minutoLimite] = WORK_SCHEDULE.onTimeLimit.split(':').map(Number);
+                const [horaReal, minutoReal] = horaEntrada.split(':').map(Number);
+                
+                const minutosLimite = horaLimite * 60 + minutoLimite;
+                const minutosReal = horaReal * 60 + minutoReal;
+                
+                const diferencia = minutosReal - minutosLimite;
+                return diferencia > 0 ? diferencia : 0;
+            }
+
+            calculateDistance(lat, lng) {
+                const R = 6371000;
+                const dLat = (lat - COMPANY_LOCATION.latitude) * Math.PI / 180;
+                const dLon = (lng - COMPANY_LOCATION.longitude) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(COMPANY_LOCATION.latitude * Math.PI / 180) * Math.cos(lat * Math.PI / 180) *
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return Math.round(R * c);
+            }
+        }
+
+        // Inicializar la base de datos
+        const dbManager = new EmpleadosDB();
+        window.db = dbManager; // Hacer disponible globalmente
+
+        // FUNCIONES PRINCIPALES (ahora asíncronas)
+        
+        async function buscarEmpleado() {
+            const dni = document.getElementById('employeeDNI').value;
+            const nameInput = document.getElementById('employeeName');
+            
+            if (dni.length === 8) {
+                try {
+                    nameInput.value = 'Buscando...';
+                    nameInput.className = '';
+                    
+                    const empleado = await dbManager.buscarEmpleado(dni);
+                    if (empleado) {
+                        nameInput.value = empleado.nombre;
+                        nameInput.className = 'employee-found';
+                        empleadoActual = empleado;
+                        await cargarEstadoEmpleado();
+                        await validarAcciones();
+                    } else {
+                        nameInput.value = 'DNI no encontrado';
+                        nameInput.className = 'employee-not-found';
+                        empleadoActual = null;
+                        deshabilitarBotones();
+                        ocultarMensajeValidacion();
+                    }
+                } catch (error) {
+                    console.error('Error al buscar empleado:', error);
+                    nameInput.value = 'Error de conexión';
+                    nameInput.className = 'employee-not-found';
+                    empleadoActual = null;
+                    deshabilitarBotones();
+                }
+            } else {
+                nameInput.value = '';
+                nameInput.className = '';
+                empleadoActual = null;
+                deshabilitarBotones();
+                ocultarMensajeValidacion();
+            }
+        }
+
+        async function validarAcciones() {
+            if (!empleadoActual) {
+                deshabilitarBotones();
+                return;
+            }
+
+            try {
+                const validationDiv = document.getElementById('validationMessage');
+                const yaEntrada = await dbManager.yaRegistroEntradaHoy(empleadoActual.dni);
+                const yaSalida = await dbManager.yaRegistroSalidaHoy(empleadoActual.dni);
+                const dentroHorario = validarHorarioLaboral();
+                
+                let mensaje = '';
+                let tipoMensaje = 'validation-message';
+                let puedeEntrada = false;
+                let puedeSalida = false;
+
+                if (!yaEntrada && dentroHorario && isWithinCompanyArea) {
+                    puedeEntrada = true;
+                    mensaje = '✅ Puedes marcar tu entrada';
+                    tipoMensaje = 'validation-message validation-success';
+                } else if (yaEntrada && !yaSalida && dentroHorario && isWithinCompanyArea) {
+                    puedeSalida = true;
+                    mensaje = '✅ Puedes marcar tu salida';
+                    tipoMensaje = 'validation-message validation-success';
+                } else if (yaEntrada && yaSalida) {
+                    mensaje = '⚠️ Ya registraste entrada y salida hoy. No puedes hacer más registros.';
+                    tipoMensaje = 'validation-message validation-warning';
+                } else if (yaEntrada && !dentroHorario) {
+                    mensaje = '⚠️ Fuera del horario laboral (9:00 AM - 6:00 PM)';
+                    tipoMensaje = 'validation-message validation-warning';
+                } else if (!dentroHorario) {
+                    mensaje = '❌ Fuera del horario laboral (9:00 AM - 6:00 PM)';
+                    tipoMensaje = 'validation-message';
+                } else if (!isWithinCompanyArea) {
+                    mensaje = '❌ Debes estar dentro del área de la empresa';
+                    tipoMensaje = 'validation-message';
+                }
+
+                if (mensaje) {
+                    validationDiv.textContent = mensaje;
+                    validationDiv.className = tipoMensaje;
+                    validationDiv.style.display = 'block';
+                } else {
+                    validationDiv.style.display = 'none';
+                }
+
+                document.getElementById('checkInBtn').disabled = !puedeEntrada;
+                document.getElementById('checkOutBtn').disabled = !puedeSalida;
+            } catch (error) {
+                console.error('Error al validar acciones:', error);
+                deshabilitarBotones();
+            }
+        }
+
+        async function recordAttendance(type) {
+            if (!empleadoActual) {
+                alert('Por favor ingresa un DNI válido');
+                return;
+            }
+
+            try {
+                // Deshabilitar botones temporalmente
+                document.getElementById('checkInBtn').disabled = true;
+                document.getElementById('checkOutBtn').disabled = true;
+
+                // Validaciones
+                if (type === 'in' && await dbManager.yaRegistroEntradaHoy(empleadoActual.dni)) {
+                    alert('❌ Ya registraste tu entrada hoy.');
+                    await validarAcciones();
+                    return;
+                }
+
+                if (type === 'out' && await dbManager.yaRegistroSalidaHoy(empleadoActual.dni)) {
+                    alert('❌ Ya registraste tu salida hoy.');
+                    await validarAcciones();
+                    return;
+                }
+
+                if (type === 'out' && !await dbManager.yaRegistroEntradaHoy(empleadoActual.dni)) {
+                    alert('❌ No puedes marcar salida sin haber marcado entrada primero.');
+                    await validarAcciones();
+                    return;
+                }
+
+                if (!validarHorarioLaboral()) {
+                    alert('❌ Fuera del horario laboral (9:00 AM - 6:00 PM)');
+                    await validarAcciones();
+                    return;
+                }
+
+                if (!isWithinCompanyArea) {
+                    alert('❌ Debes estar dentro del área de la empresa');
+                    await validarAcciones();
+                    return;
+                }
+
+                const registro = await dbManager.insertarRegistro(empleadoActual.dni, empleadoActual.nombre, type, currentLocation);
+                currentStatus = type;
+                
+                let mensajeExito = `✅ ${type === 'in' ? 'Entrada' : 'Salida'} registrada correctamente para ${empleadoActual.nombre}`;
+                
+                if (type === 'in' && registro.tardanza > 0) {
+                    const horas = Math.floor(registro.tardanza / 60);
+                    const minutos = registro.tardanza % 60;
+                    let tardanzaTexto = horas > 0 ? `${horas}h ${minutos}min` : `${minutos} minutos`;
+                    mensajeExito += `\n⚠️ Tardanza: ${tardanzaTexto}`;
+                }
+                
+                actualizarEstadoActual(type, new Date(), registro.tardanza);
+                await validarAcciones();
+                alert(mensajeExito);
+                
+            } catch (error) {
+                console.error('Error al registrar:', error);
+                alert('❌ Error al registrar asistencia. Verifica tu conexión.');
+                await validarAcciones();
+            }
+        }
+
+        async function cargarEstadoEmpleado() {
+            if (!empleadoActual) return;
+
+            try {
+                const ultimoEstado = await dbManager.obtenerUltimoEstado(empleadoActual.dni);
+                if (ultimoEstado) {
+                    currentStatus = ultimoEstado.tipo;
+                    actualizarEstadoActual(ultimoEstado.tipo, new Date(ultimoEstado.timestamp), ultimoEstado.tardanza);
+                } else {
+                    currentStatus = 'out';
+                    document.getElementById('currentStatus').textContent = 'Fuera del trabajo';
+                    document.getElementById('lastAction').textContent = 'Ninguna';
+                    document.getElementById('tardanzaInfo').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error al cargar estado:', error);
+            }
+        }
+
+        // GESTIÓN DE EMPLEADOS
+        async function agregarEmpleado() {
+            const dni = document.getElementById('newDNI').value.trim();
+            const nombre = document.getElementById('newName').value.trim();
+
+            if (!dni || !nombre) {
+                alert('Por favor completa todos los campos');
+                return;
+            }
+
+            if (dni.length !== 8 || !/^\d+$/.test(dni)) {
+                alert('El DNI debe tener exactamente 8 dígitos');
+                return;
+            }
+
+            try {
+                await dbManager.agregarEmpleado(dni, nombre);
+                document.getElementById('newDNI').value = '';
+                document.getElementById('newName').value = '';
+                alert(`✅ Empleado ${nombre} agregado correctamente`);
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        async function eliminarEmpleado(dni) {
+            if (confirm('¿Estás seguro de eliminar este empleado?')) {
+                try {
+                    const resultado = await dbManager.eliminarEmpleado(dni);
+                    if (resultado) {
+                        alert('✅ Empleado eliminado correctamente');
+                    } else {
+                        alert('❌ Error al eliminar empleado');
+                    }
+                } catch (error) {
+                    alert('❌ Error al eliminar empleado');
+                }
+            }
+        }
+
+        async function importarExcel() {
+            const file = document.getElementById('fileInput').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    const empleados = [];
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (row[0] && row[1]) {
+                            const dni = String(row[0]).trim();
+                            const nombre = String(row[1]).trim();
+                            
+                            if (dni.length === 8 && /^\d+$/.test(dni)) {
+                                empleados.push({ dni, nombre });
+                            }
+                        }
+                    }
+
+                    if (empleados.length === 0) {
+                        alert('No se encontraron empleados válidos en el archivo');
+                        return;
+                    }
+
+                    const resultado = await dbManager.importarEmpleados(empleados);
+                    
+                    let mensaje = `✅ Importación completada:\n- ${resultado.agregados} empleados agregados`;
+                    if (resultado.errores.length > 0) {
+                        mensaje += `\n- ${resultado.errores.length} errores:\n${resultado.errores.slice(0, 5).join('\n')}`;
+                    }
+                    alert(mensaje);
+
+                } catch (error) {
+                    alert('❌ Error al procesar el archivo Excel');
+                    console.error(error);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // EXPORTACIONES
+        async function exportToExcel() {
+            try {
+                const registros = await dbManager.obtenerTodosRegistros();
+                
+                if (registros.length === 0) {
+                    alert('No hay registros para exportar');
+                    return;
+                }
+
+                const data = [['DNI', 'Nombre', 'Tipo', 'Fecha', 'Hora', 'Timestamp', 'Latitud', 'Longitud', 'Distancia (m)', 'Tardanza (min)']];
+                registros.forEach(record => {
+                    data.push([
+                        record.dni,
+                        record.nombre,
+                        record.tipo === 'in' ? 'ENTRADA' : 'SALIDA',
+                        record.fecha,
+                        record.hora,
+                        record.timestamp,
+                        record.latitud,
+                        record.longitud,
+                        record.distancia,
+                        record.tardanza || 0
+                    ]);
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [
+                    {wch: 12}, {wch: 25}, {wch: 10}, {wch: 12}, {wch: 10}, 
+                    {wch: 20}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 15}
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, "Asistencia_Completa");
+                XLSX.writeFile(wb, `Asistencia_Completa_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+                alert(`✅ Excel exportado: ${registros.length} registros`);
+            } catch (error) {
+                alert('❌ Error al exportar datos');
+                console.error(error);
+            }
+        }
+
+        async function exportTodayOnly() {
+            try {
+                const registros = await dbManager.obtenerRegistrosHoy();
+                
+                if (registros.length === 0) {
+                    alert('No hay registros de hoy para exportar');
+                    return;
+                }
+
+                const data = [['DNI', 'Nombre', 'Tipo', 'Hora', 'Latitud', 'Longitud', 'Distancia (m)', 'Tardanza (min)']];
+                registros.forEach(record => {
+                    data.push([
+                        record.dni,
+                        record.nombre,
+                        record.tipo === 'in' ? 'ENTRADA' : 'SALIDA',
+                        record.hora,
+                        record.latitud,
+                        record.longitud,
+                        record.distancia,
+                        record.tardanza || 0
+                    ]);
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{wch: 12}, {wch: 25}, {wch: 10}, {wch: 10}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 15}];
+                
+                XLSX.utils.book_append_sheet(wb, ws, "Asistencia_Hoy");
+                XLSX.writeFile(wb, `Asistencia_Hoy_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+                alert(`✅ Excel de hoy exportado: ${registros.length} registros`);
+            } catch (error) {
+                alert('❌ Error al exportar datos');
+                console.error(error);
+            }
+        }
+
+        async function exportEmpleadosAsistencia() {
+            try {
+                const empleados = await dbManager.obtenerEmpleados();
+                const registros = await dbManager.obtenerTodosRegistros();
+                
+                const wb = XLSX.utils.book_new();
+                
+                const resumenData = [['DNI', 'Nombre', 'Total Registros', 'Último Registro', 'Estado Actual', 'Tardanzas Total']];
+                
+                for (const emp of empleados) {
+                    const registrosEmp = registros.filter(r => r.dni === emp.dni);
+                    const tardanzasEmp = registrosEmp.filter(r => r.tipo === 'in' && r.tardanza > 0).length;
+                    const ultimoRegistro = registrosEmp.length > 0 ? registrosEmp[0] : null;
+                    const ultimoEstadoHoy = await dbManager.obtenerUltimoEstado(emp.dni);
+                    
+                    resumenData.push([
+                        emp.dni,
+                        emp.nombre,
+                        registrosEmp.length,
+                        ultimoRegistro ? ultimoRegistro.fecha : 'Nunca',
+                        ultimoEstadoHoy ? (ultimoEstadoHoy.tipo === 'in' ? 'EN TRABAJO' : 'FUERA') : 'SIN REGISTRO HOY',
+                        tardanzasEmp
+                    ]);
+                }
+                
+                const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+                wsResumen['!cols'] = [{wch: 12}, {wch: 25}, {wch: 15}, {wch: 15}, {wch: 18}, {wch: 15}];
+                XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen_Empleados");
+                
+                const detalleData = [['DNI', 'Nombre', 'Tipo', 'Fecha', 'Hora', 'Distancia (m)', 'Tardanza (min)']];
+                registros.forEach(record => {
+                    detalleData.push([
+                        record.dni,
+                        record.nombre,
+                        record.tipo === 'in' ? 'ENTRADA' : 'SALIDA',
+                        record.fecha,
+                        record.hora,
+                        record.distancia,
+                        record.tardanza || 0
+                    ]);
+                });
+                
+                const wsDetalle = XLSX.utils.aoa_to_sheet(detalleData);
+                wsDetalle['!cols'] = [{wch: 12}, {wch: 25}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 12}, {wch: 15}];
+                XLSX.utils.book_append_sheet(wb, wsDetalle, "Detalle_Registros");
+                
+                XLSX.writeFile(wb, `Reporte_Por_Empleado_${new Date().toISOString().split('T')[0]}.xlsx`);
+                alert(`✅ Reporte por empleado exportado: ${empleados.length} empleados, ${registros.length} registros`);
+            } catch (error) {
+                alert('❌ Error al exportar reporte');
+                console.error(error);
+            }
+        }
+
+        async function exportRangoFechas() {
+            const fechaInicio = document.getElementById('fechaInicio').value;
+            const fechaFin = document.getElementById('fechaFin').value;
+            
+            if (!fechaInicio || !fechaFin) {
+                alert('Por favor selecciona ambas fechas');
+                return;
+            }
+            
+            if (fechaInicio > fechaFin) {
+                alert('La fecha de inicio debe ser anterior a la fecha fin');
+                return;
+            }
+            
+            try {
+                const registros = await dbManager.obtenerRegistrosPorFecha(fechaInicio, fechaFin);
+                
+                if (registros.length === 0) {
+                    alert('No hay registros en el rango de fechas seleccionado');
+                    return;
+                }
+                
+                const data = [['DNI', 'Nombre', 'Tipo', 'Fecha', 'Hora', 'Distancia (m)', 'Tardanza (min)']];
+                registros.forEach(record => {
+                    data.push([
+                        record.dni,
+                        record.nombre,
+                        record.tipo === 'in' ? 'ENTRADA' : 'SALIDA',
+                        record.fecha,
+                        record.hora,
+                        record.distancia,
+                        record.tardanza || 0
+                    ]);
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{wch: 12}, {wch: 25}, {wch: 10}, {wch: 12}, {wch: 10}, {wch: 12}, {wch: 15}];
+                
+                XLSX.utils.book_append_sheet(wb, ws, "Rango_Fechas");
+                XLSX.writeFile(wb, `Asistencia_${fechaInicio}_a_${fechaFin}.xlsx`);
+                
+                alert(`✅ Exportado: ${registros.length} registros del ${fechaInicio} al ${fechaFin}`);
+            } catch (error) {
+                alert('❌ Error al exportar rango de fechas');
+                console.error(error);
+            }
+        }
+
+        async function exportarEmpleados() {
+            try {
+                const empleados = await dbManager.obtenerEmpleados();
+                
+                if (empleados.length === 0) {
+                    alert('No hay empleados para exportar');
+                    return;
+                }
+
+                const data = [['DNI', 'Nombre Completo', 'Fecha Creación', 'Estado']];
+                empleados.forEach(emp => {
+                    const fechaCreacion = emp.fechaCreacion?.toDate ? 
+                        emp.fechaCreacion.toDate().toLocaleDateString('es-PE') : 
+                        new Date(emp.fechaCreacion).toLocaleDateString('es-PE');
+                    
+                    data.push([
+                        emp.dni,
+                        emp.nombre,
+                        fechaCreacion,
+                        emp.activo ? 'Activo' : 'Inactivo'
+                    ]);
+                });
+
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{ wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 10 }];
+                
+                XLSX.utils.book_append_sheet(wb, ws, "Lista_Empleados");
+                XLSX.writeFile(wb, `Lista_Empleados_${new Date().toISOString().split('T')[0]}.xlsx`);
+                
+                alert(`✅ Lista de ${empleados.length} empleados exportada`);
+            } catch (error) {
+                alert('❌ Error al exportar empleados');
+                console.error(error);
+            }
+        }
+
+        async function limpiarEmpleados() {
+            if (confirm('¿Estás seguro de eliminar TODOS los empleados? Esta acción no se puede deshacer.')) {
+                try {
+                    // Eliminar todos los empleados
+                    const empleadosSnapshot = await getDocs(dbManager.empleadosRef);
+                    for (const docSnapshot of empleadosSnapshot.docs) {
+                        await deleteDoc(docSnapshot.ref);
+                    }
+                    
+                    // Recrear empleados iniciales
+                    await dbManager.initDB();
+                    alert('✅ Lista de empleados reiniciada con datos iniciales');
+                } catch (error) {
+                    alert('❌ Error al limpiar empleados');
+                    console.error(error);
+                }
+            }
+        }
+
+        async function limpiarTodosLosDatos() {
+            if (confirm('¿Estás seguro de eliminar TODA la base de datos (empleados y registros)? Esta acción no se puede deshacer.')) {
+                if (confirm('ÚLTIMA CONFIRMACIÓN: Se perderán todos los datos. ¿Continuar?')) {
+                    try {
+                        await dbManager.limpiarTodo();
+                        alert('✅ Base de datos limpiada y reiniciada');
+                        location.reload();
+                    } catch (error) {
+                        alert('❌ Error al limpiar la base de datos');
+                        console.error(error);
+                    }
+                }
+            }
+        }
+
+        // FUNCIONES DE INTERFAZ
+        function descargarPlantilla() {
+            const data = [
+                ['DNI', 'Nombre Completo'],
+                ['12345678', 'Juan Pérez García'],
+                ['87654321', 'María García López'],
+                ['11223344', 'Carlos Rodríguez Silva']
+            ];
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            ws['!cols'] = [{ wch: 12 }, { wch: 30 }];
+            
+            XLSX.utils.book_append_sheet(wb, ws, "Plantilla_Empleados");
+            XLSX.writeFile(wb, "Plantilla_Empleados.xlsx");
+            
+            alert('✅ Plantilla descargada. Completa las columnas A (DNI) y B (Nombre)');
+        }
+
+        // FUNCIONES DE AUTENTICACIÓN
+        function solicitarAccesoAdmin(callback) {
+            if (isAdmin) {
+                callback();
+                return;
+            }
+            
+            window.pendingAdminAction = callback;
+            document.getElementById('adminModal').style.display = 'block';
+            document.getElementById('adminUser').focus();
+        }
+
+        function loginAdmin() {
+            const usuario = document.getElementById('adminUser').value;
+            const contraseña = document.getElementById('adminPass').value;
+            
+            if (usuario === ADMIN_CREDENTIALS.username && contraseña === ADMIN_CREDENTIALS.password) {
+                isAdmin = true;
+                document.getElementById('adminIndicator').style.display = 'block';
+                
+                const empleadosTab = document.getElementById('empleadosTab');
+                const reportesTab = document.getElementById('reportesTab');
+                
+                empleadosTab.classList.remove('locked');
+                reportesTab.classList.remove('locked');
+                empleadosTab.innerHTML = '👥 Empleados';
+                reportesTab.innerHTML = '📊 Reportes';
+                
+                cerrarModal();
+                
+                if (window.pendingAdminAction) {
+                    window.pendingAdminAction();
+                    window.pendingAdminAction = null;
+                }
+                
+                alert('✅ Acceso de administrador concedido');
+            } else {
+                alert('❌ Credenciales incorrectas');
+            }
+            
+            document.getElementById('adminUser').value = '';
+            document.getElementById('adminPass').value = '';
+        }
+
+        function logoutAdmin() {
+            if (confirm('¿Cerrar sesión de administrador?')) {
+                isAdmin = false;
+                document.getElementById('adminIndicator').style.display = 'none';
+                
+                const empleadosTab = document.getElementById('empleadosTab');
+                const reportesTab = document.getElementById('reportesTab');
+                
+                empleadosTab.classList.add('locked');
+                reportesTab.classList.add('locked');
+                empleadosTab.innerHTML = '👥 Empleados <span class="tab-lock">🔒</span>';
+                reportesTab.innerHTML = '📊 Reportes <span class="tab-lock">🔒</span>';
+                
+                switchTab('asistencia');
+                alert('✅ Sesión de administrador cerrada');
+            }
+        }
+
+        function cerrarModal() {
+            document.getElementById('adminModal').style.display = 'none';
+        }
+
+        async function switchTab(tabName) {
+            if ((tabName === 'empleados' || tabName === 'reportes') && !isAdmin) {
+                solicitarAccesoAdmin(() => switchTab(tabName));
+                return;
+            }
+            
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => {
+                if ((tabName === 'asistencia' && tab.textContent.includes('Asistencia')) ||
+                    (tabName === 'empleados' && tab.textContent.includes('Empleados')) ||
+                    (tabName === 'reportes' && tab.textContent.includes('Reportes'))) {
+                    tab.classList.add('active');
+                }
+            });
+
+            if (tabName === 'empleados') {
+                await dbManager.mostrarListaEmpleados();
+                await dbManager.actualizarEstadisticasEmpleados();
+            } else if (tabName === 'reportes') {
+                await dbManager.actualizarEstadisticasReportes();
+            }
+        }
+
+        // Métodos de la clase EmpleadosDB para la interfaz
+        EmpleadosDB.prototype.mostrarListaEmpleados = async function() {
+            try {
+                const empleados = await this.obtenerEmpleados();
+                const container = document.getElementById('employeeList');
+
+                if (empleados.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No hay empleados registrados</p>';
+                    return;
+                }
+
+                container.innerHTML = empleados.map(emp => `
+                    <div class="employee-item">
+                        <div class="employee-details">
+                            <div class="employee-dni">DNI: ${emp.dni}</div>
+                            <div class="employee-name">${emp.nombre}</div>
+                        </div>
+                        <div class="employee-actions">
+                            <button class="btn btn-danger btn-small" onclick="eliminarEmpleado('${emp.dni}')">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error al mostrar empleados:', error);
+            }
+        };
+
+        EmpleadosDB.prototype.actualizarEstadisticasEmpleados = async function() {
+            try {
+                const stats = await this.obtenerEstadisticas();
+                document.getElementById('totalEmpleados').textContent = stats.totalEmpleados;
+                document.getElementById('empleadosActivos').textContent = stats.empleadosActivosHoy;
+            } catch (error) {
+                console.error('Error al actualizar estadísticas empleados:', error);
+            }
+        };
+
+        EmpleadosDB.prototype.actualizarEstadisticasReportes = async function() {
+            try {
+                const stats = await this.obtenerEstadisticas();
+                document.getElementById('reporteTotalRegistros').textContent = stats.totalRegistros;
+                document.getElementById('reporteRegistrosHoy').textContent = stats.registrosHoy;
+                document.getElementById('reporteEmpleadosHoy').textContent = stats.empleadosActivosHoy;
+                document.getElementById('reporteTardanzas').textContent = stats.tardanzasHoy;
+            } catch (error) {
+                console.error('Error al actualizar estadísticas reportes:', error);
+            }
+        };
+
+        EmpleadosDB.prototype.mostrarRegistros = async function() {
+            try {
+                const recordsContainer = document.getElementById('attendanceRecords');
+                const todayRecords = await this.obtenerRegistrosHoy();
+
+                if (todayRecords.length === 0) {
+                    recordsContainer.innerHTML = '<p style="color: #666; text-align: center;">No hay registros para hoy</p>';
+                    return;
+                }
+
+                recordsContainer.innerHTML = todayRecords.map(record => {
+                    let tardanzaInfo = '';
+                    if (record.tipo === 'in' && record.tardanza !== undefined) {
+                        if (record.tardanza > 0) {
+                            const horas = Math.floor(record.tardanza / 60);
+                            const minutos = record.tardanza % 60;
+                            let tardanzaTexto = horas > 0 ? `${horas}h ${minutos}min` : `${minutos}min`;
+                            tardanzaInfo = ` | ⏰ Tardanza: ${tardanzaTexto}`;
+                        } else {
+                            tardanzaInfo = ' | ✅ Puntual';
+                        }
+                    }
+                    
+                    return `
+                        <div class="attendance-record">
+                            <div class="record-info">
+                                <div class="record-time">${record.hora}</div>
+                                <div class="record-type">${record.tipo === 'in' ? 'Entrada' : 'Salida'} - ${record.nombre}</div>
+                                <div style="font-size: 11px; color: #999;">DNI: ${record.dni} | Distancia: ${record.distancia}m${tardanzaInfo}</div>
+                            </div>
+                            <div class="record-status ${record.tipo === 'in' ? 'status-in' : 'status-out'}${record.tardanza > 0 ? ' status-late' : ''}">
+                                ${record.tipo === 'in' ? 'ENTRADA' : 'SALIDA'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error al mostrar registros:', error);
+            }
+        };
+
+        EmpleadosDB.prototype.actualizarEstadisticas = async function() {
+            try {
+                const stats = await this.obtenerEstadisticas();
+                document.getElementById('totalRegistros').textContent = stats.registrosHoy;
+            } catch (error) {
+                console.error('Error al actualizar estadísticas:', error);
+            }
+        };
+
+        function validarHorarioLaboral() {
+            return true;
+        }   
+
+        function ocultarMensajeValidacion() {
+            document.getElementById('validationMessage').style.display = 'none';
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-PE', { 
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function checkLocation() {
+            const locationStatus = document.getElementById('locationStatus');
+            const locationText = document.getElementById('locationText');
+            
+            if (!navigator.geolocation) {
+                locationText.textContent = '❌ Geolocalización no disponible';
+                locationStatus.className = 'location-status location-denied';
+                return;
+            }
+
+            locationText.textContent = '📡 Verificando ubicación...';
+            locationStatus.className = 'location-status location-checking';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    currentLocation = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+
+                    const distance = calculateDistance(
+                        currentLocation.latitude,
+                        currentLocation.longitude,
+                        COMPANY_LOCATION.latitude,
+                        COMPANY_LOCATION.longitude
+                    );
+
+                    if (distance <= COMPANY_LOCATION.radius) {
+                        isWithinCompanyArea = true;
+                        locationText.textContent = `✅ Dentro del área permitida (${Math.round(distance)}m)`;
+                        locationStatus.className = 'location-status location-allowed';
+                    } else {
+                        isWithinCompanyArea = false;
+                        locationText.textContent = `❌ Fuera del área permitida (${Math.round(distance)}m)`;
+                        locationStatus.className = 'location-status location-denied';
+                    }
+                    
+                    if (empleadoActual) {
+                        validarAcciones();
+                    }
+                },
+                (error) => {
+                    locationText.textContent = '❌ Error al obtener ubicación';
+                    locationStatus.className = 'location-status location-denied';
+                    isWithinCompanyArea = false;
+                    if (empleadoActual) {
+                        validarAcciones();
+                    }
+                    console.error('Error de geolocalización:', error);
+                }
+            );
+        }
+
+        function deshabilitarBotones() {
+            document.getElementById('checkInBtn').disabled = true;
+            document.getElementById('checkOutBtn').disabled = true;
+        }
+
+        function actualizarEstadoActual(type, timestamp, tardanza = null) {
+            const statusElement = document.getElementById('currentStatus');
+            const lastActionElement = document.getElementById('lastAction');
+            const tardanzaInfoElement = document.getElementById('tardanzaInfo');
+            
+            statusElement.textContent = type === 'in' ? 'En el trabajo' : 'Fuera del trabajo';
+            lastActionElement.textContent = `${type === 'in' ? 'Entrada' : 'Salida'} - ${timestamp.toLocaleTimeString('es-PE')}`;
+            
+            if (type === 'in' && tardanza !== null) {
+                if (tardanza > 0) {
+                    const horas = Math.floor(tardanza / 60);
+                    const minutos = tardanza % 60;
+                    let tardanzaTexto = horas > 0 ? `${horas}h ${minutos}min` : `${minutos} minutos`;
+                    
+                    tardanzaInfoElement.innerHTML = `<div class="tardanza-info ${tardanza > 30 ? 'tardanza-critica' : ''}">
+                        ⏰ <strong>Tardanza:</strong> ${tardanzaTexto}
+                    </div>`;
+                } else {
+                    tardanzaInfoElement.innerHTML = `<div class="tardanza-info validation-success">
+                        ✅ <strong>Puntual:</strong> Entrada a tiempo
+                    </div>`;
+                }
+            } else {
+                tardanzaInfoElement.innerHTML = '';
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                cerrarModal();
+            }
+            
+            if (document.getElementById('adminModal').style.display === 'block' && event.key === 'Enter') {
+                loginAdmin();
+            }
+        });
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('adminModal');
+            if (event.target === modal) {
+                cerrarModal();
+            }
+        }
+
+        // Hacer funciones disponibles globalmente
+        window.buscarEmpleado = buscarEmpleado;
+        window.recordAttendance = recordAttendance;
+        window.switchTab = switchTab;
+        window.agregarEmpleado = agregarEmpleado;
+        window.eliminarEmpleado = eliminarEmpleado;
+        window.importarExcel = importarExcel;
+        window.exportToExcel = exportToExcel;
+        window.exportTodayOnly = exportTodayOnly;
+        window.exportEmpleadosAsistencia = exportEmpleadosAsistencia;
+        window.exportRangoFechas = exportRangoFechas;
+        window.exportarEmpleados = exportarEmpleados;
+        window.limpiarEmpleados = limpiarEmpleados;
+        window.limpiarTodosLosDatos = limpiarTodosLosDatos;
+        window.descargarPlantilla = descargarPlantilla;
+        window.loginAdmin = loginAdmin;
+        window.logoutAdmin = logoutAdmin;
+        window.cerrarModal = cerrarModal;
+        window.solicitarAccesoAdmin = solicitarAccesoAdmin;
+
+        // INICIALIZACIÓN
+        updateClock();
+        setInterval(updateClock, 1000);
+        
+        checkLocation();
+        setInterval(checkLocation, 30000);
+        
+        // Verificar validaciones cada minuto
+        setInterval(async () => {
+            if (empleadoActual) {
+                await validarAcciones();
+            }
+        }, 60000);
+
+        // Configurar fechas por defecto
+        document.getElementById('fechaInicio').value = new Date().toISOString().split('T')[0];
+        document.getElementById('fechaFin').value = new Date().toISOString().split('T')[0];
+
+        // Mostrar información inicial
+        setTimeout(async () => {
+            try {
+                const stats = await dbManager.obtenerEstadisticas();
+                console.log(`🎉 Sistema de Asistencia con Firebase cargado:`);
+                console.log(`📊 ${stats.totalEmpleados} empleados, ${stats.totalRegistros} registros totales`);
+                console.log(`📅 Hoy: ${stats.registrosHoy} registros, ${stats.empleadosActivosHoy} empleados activos`);
+                console.log(`⏰ Horario: ${WORK_SCHEDULE.startTime} - ${WORK_SCHEDULE.endTime}`);
+                console.log(`🔐 Credenciales admin: usuario=admin, contraseña=123`);
+                console.log(`🔥 Base de datos sincronizada en tiempo real`);
+            } catch (error) {
+                console.error('Error al cargar estadísticas iniciales:', error);
+            }
+        }, 2000);
+
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
